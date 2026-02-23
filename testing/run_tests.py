@@ -821,6 +821,9 @@ lu = (
 	('testing_zgetri_gpu',             '-c',  n,    ''),
 	('testing_zgetri_gpu', '--version 2 -c',  n,    ''),
 	('testing_zgetrf_mgpu',    ngpu + '-c2',  n,    ''),
+	('testing_zgetrs_gpu',             '-c',  n,    ''),
+	('testing_zgetrs_gpu',          '-T -c',  n,    ''),
+	('testing_zgetrs_gpu',          '-C -c',  n,    ''),
 
 	# ----------
 	# LU, CPU interface
