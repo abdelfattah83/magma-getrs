@@ -10,6 +10,8 @@
 */
 #include "magma_internal.h"
 
+#define MAGMA_GETRS_USE_LASWP_CPU
+
 /***************************************************************************//**
     Purpose
     -------
@@ -121,7 +123,6 @@ magma_zgetrs_expert_gpu_work(
     const magmaDoubleComplex c_one = MAGMA_Z_ONE;
 
     // Local variables
-    magmaDoubleComplex *work = NULL;
     bool notran = (trans == MagmaNoTrans);
     magma_int_t i1, i2, inc;
 
@@ -178,8 +179,11 @@ magma_zgetrs_expert_gpu_work(
         return *info;
     }
 
+    #ifdef MAGMA_GETRS_USE_LASWP_CPU
     // Assign pointers
+    magmaDoubleComplex *work = NULL;
     work = (magmaDoubleComplex*)host_work;
+    #endif
 
     i1 = 1;
     i2 = n;
@@ -187,9 +191,13 @@ magma_zgetrs_expert_gpu_work(
         inc = 1;
 
         /* Solve A * X = B. */
+        #ifdef MAGMA_GETRS_USE_LASWP_CPU
         magma_zgetmatrix( n, nrhs, dB, lddb, work, n, queue );
         lapackf77_zlaswp( &nrhs, work, &n, &i1, &i2, ipiv, &inc );
         magma_zsetmatrix( n, nrhs, work, n, dB, lddb, queue );
+        #else
+        magmablas_zlaswpx(nrhs, dB, 1, lddb, i1, i2, ipiv, inc, queue );
+        #endif
 
         if ( nrhs == 1) {
             magma_ztrsv( MagmaLower, MagmaNoTrans, MagmaUnit,    n, dA, ldda, dB, 1, queue );
@@ -210,9 +218,13 @@ magma_zgetrs_expert_gpu_work(
             magma_ztrsm( MagmaLeft, MagmaLower, trans, MagmaUnit,    n, nrhs, c_one, dA, ldda, dB, lddb, queue );
         }
 
+        #ifdef MAGMA_GETRS_USE_LASWP_CPU
         magma_zgetmatrix( n, nrhs, dB, lddb, work, n, queue );
         lapackf77_zlaswp( &nrhs, work, &n, &i1, &i2, ipiv, &inc );
         magma_zsetmatrix( n, nrhs, work, n, dB, lddb, queue );
+        #else
+        magmablas_zlaswpx(nrhs, dB, 1, lddb, i1, i2, ipiv, inc, queue );
+        #endif
     }
 
     return *info;
